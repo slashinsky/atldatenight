@@ -1,0 +1,334 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .app { padding: 1.5rem 1rem 2rem; max-width: 680px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 1.5rem; }
+  .header h1 { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .header p { font-size: 14px; color: var(--color-text-secondary); margin-top: 4px; }
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 8px 18px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); font-size: 14px; cursor: pointer; background: var(--color-background-primary); color: var(--color-text-secondary); transition: all 0.18s; }
+  .tab:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); font-weight: 500; }
+  .wheel-area { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; }
+  .wheel-wrap { position: relative; width: 300px; height: 300px; }
+  canvas#wheel { border-radius: 50%; display: block; }
+  .pointer { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 28px solid var(--color-text-primary); }
+  .spin-btn { padding: 12px 36px; font-size: 16px; font-weight: 500; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); cursor: pointer; background: var(--color-background-primary); color: var(--color-text-primary); transition: all 0.15s; }
+  .spin-btn:hover { background: var(--color-background-secondary); }
+  .spin-btn:active { transform: scale(0.97); }
+  .spin-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .result-card { width: 100%; max-width: 420px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; text-align: center; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .result-name { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+  .result-detail { font-size: 13px; color: var(--color-text-secondary); }
+  .result-placeholder { font-size: 14px; color: var(--color-text-secondary); }
+  .manage-section { width: 100%; max-width: 480px; margin-top: 1.25rem; }
+  .manage-toggle { font-size: 13px; color: var(--color-text-secondary); cursor: pointer; text-align: center; padding: 8px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .manage-toggle:hover { background: var(--color-background-secondary); }
+  .manage-panel { display: none; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem; margin-top: 8px; background: var(--color-background-primary); }
+  .manage-panel.open { display: block; }
+  .item-list { list-style: none; margin-bottom: 12px; max-height: 220px; overflow-y: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); }
+  .item-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 7px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 13px; }
+  .item-list li:last-child { border-bottom: none; }
+  .item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .item-name-text { color: var(--color-text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-detail-text { color: var(--color-text-secondary); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--color-text-secondary); font-size: 17px; padding: 0 3px; line-height: 1; flex-shrink: 0; transition: color 0.15s; }
+  .del-btn:hover { color: var(--color-text-primary); }
+  .add-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .add-row input { flex: 1; min-width: 120px; font-size: 13px; }
+  .add-btn { font-size: 13px; white-space: nowrap; }
+  .saved-notice { font-size: 11px; color: var(--color-text-secondary); text-align: center; margin-top: 8px; opacity: 0; transition: opacity 0.3s; }
+  .saved-notice.show { opacity: 1; }
+  .count { font-size: 11px; color: var(--color-text-secondary); background: var(--color-background-secondary); border-radius: 999px; padding: 1px 7px; }
+</style>
+
+<div class="app">
+  <h2 class="sr-only">Atlanta date night spinner — choose a category and spin to get a suggestion</h2>
+  <div class="header">
+    <h1>Atlanta date night spinner</h1>
+    <p>Pick a category, spin, and let fate decide your evening</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setCategory('experiences')">Experiences</button>
+    <button class="tab" onclick="setCategory('chill')">Chill restaurants</button>
+    <button class="tab" onclick="setCategory('fancy')">Fancy restaurants</button>
+  </div>
+
+  <div class="wheel-area">
+    <div class="wheel-wrap">
+      <div class="pointer"></div>
+      <canvas id="wheel" width="300" height="300"></canvas>
+    </div>
+    <button class="spin-btn" id="spinBtn" onclick="spin()">Spin it!</button>
+    <div class="result-card" id="resultCard">
+      <span class="result-placeholder">Hit spin to reveal your date night pick</span>
+    </div>
+  </div>
+
+  <div class="manage-section">
+    <div class="manage-toggle" onclick="toggleManage()">
+      <span id="toggleLabel">Edit this list</span>
+      <span class="count" id="countBadge">0</span>
+    </div>
+    <div class="manage-panel" id="managePanel">
+      <ul class="item-list" id="itemList"></ul>
+      <div class="add-row">
+        <input id="addName" type="text" placeholder="Name (e.g. Poor Hendrix)" onkeydown="if(event.key==='Enter')addItem()" />
+        <input id="addDetail" type="text" placeholder="Note (neighborhood, cuisine...)" onkeydown="if(event.key==='Enter')addItem()" />
+        <button class="add-btn" onclick="addItem()">Add</button>
+      </div>
+      <div class="saved-notice" id="savedNotice">Changes saved</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULTS = {
+  experiences: [
+    {name:"Atlanta Botanical Garden",detail:"Evening stroll — check for Garden Lights events"},
+    {name:"Fox Theatre show",detail:"Broadway, concerts & more in a stunning venue"},
+    {name:"High Museum — Friday Jazz",detail:"Live jazz + cocktails among the art, 3rd Fridays"},
+    {name:"Georgia Aquarium after dark",detail:"Adults-only 18+ evening events with DJ & drinks"},
+    {name:"BeltLine Eastside Trail",detail:"Walk, public art, end at Ponce City Market"},
+    {name:"Skyline Park at PCM",detail:"Rooftop mini golf + drinks + city views"},
+    {name:"Cooking class — Irwin St.",detail:"Adult gourmet workshops, you eat what you make"},
+    {name:"Pasta-making at Bellina",detail:"Hands-on class at Ponce City Market"},
+    {name:"Escape room — Midtown",detail:"Team challenge, great for any stage of couple"},
+    {name:"Joystick Game Bar",detail:"Arcade + cocktails + chef plates in Old 4th Ward"},
+    {name:"Starlight Drive-In",detail:"Metro Atlanta's only drive-in — pack snacks!"},
+    {name:"Chattahoochee River paddle",detail:"Sunset canoe or kayak, bring wine & snacks"},
+    {name:"Krog Street Tunnel art tour",detail:"Self-guided street art walk in Cabbagetown"},
+    {name:"Atlanta Symphony Orchestra",detail:"Classical to film scores — Symphony Hall or outdoors"},
+    {name:"Brewery hopping",detail:"Atlanta craft beer scene — taprooms with outdoor seating"},
+    {name:"Piedmont Park picnic",detail:"Pack a spread, grab a tandem bike, just wander"},
+    {name:"TopGolf Midtown",detail:"3-story bays, great food + drinks — always a good time"},
+    {name:"Bowling night",detail:"Upscale bowling lounges with full bar & food"},
+    {name:"Axe throwing",detail:"Competitive and hilarious — great for any couple"},
+    {name:"Pottery class",detail:"Hands-on wheel throwing — therapeutic & fun together"},
+  ],
+  chill: [
+    {name:"BoccaLupo",detail:"Hand-cut pasta, intimate vibe — Inman Park"},
+    {name:"Southern Belle",detail:"Southern cuisine, ask for the 'Poncey Hood' menu"},
+    {name:"Kinjo Room",detail:"Intimate sushi & small plates, candlelit — The Interlock"},
+    {name:"La Semilla",detail:"Upscale-casual farm-to-table — Reynoldstown"},
+    {name:"Kitty Dare",detail:"Shareable plates, great cocktails, lively energy"},
+    {name:"Forza Storico",detail:"Fantastic pasta + buzzing patio — West Midtown"},
+    {name:"Osha Thai & Sushi",detail:"Fresh sushi + bold Thai, intimate atmosphere"},
+    {name:"Del Bar",detail:"Rich Middle Eastern flavors, cozy spot"},
+    {name:"5Church Midtown",detail:"Chic, stylish setting + impressive food"},
+    {name:"Kid Cashew",detail:"Med small plates, wood-fire grill — Sandy Springs"},
+    {name:"Pisco Latin Kitchen",detail:"Peruvian-Cuban-Japanese fusion — Sandy Springs"},
+    {name:"Gigi's",detail:"Tiny romantic Italian, red gingham & candlelight — Candler Park"},
+    {name:"Beetlecat",detail:"Oysters, seafood, killer cocktails + patio — Inman Park"},
+    {name:"Banshee",detail:"Most upscale spot in EAV — dark, moody, great pasta"},
+    {name:"No. 246",detail:"Classic red-sauce Italian reimagined — Decatur Square"},
+    {name:"The Iberian Pig",detail:"Spanish tapas, great wine, lively — Decatur"},
+    {name:"Leon's Full Service",detail:"Beloved neighborhood gastropub — Decatur"},
+    {name:"Kimball House",detail:"20+ oysters, swanky cocktails, Michelin rec — Decatur"},
+    {name:"Food Terminal",detail:"Pan-Asian street food, Michelin rec — Buford Hwy"},
+    {name:"El Rey Del Taco",detail:"Best tacos in Atlanta, nearly 24hrs — Buford Hwy"},
+    {name:"Masterpiece",detail:"Exceptional Sichuan, Zhong dumplings — Buford Hwy"},
+    {name:"Tum Pok Pok",detail:"Bold Thai, a must-visit — Buford Hwy"},
+    {name:"Mushi Ni",detail:"Asian American baos, dumplings & rice bowls — The Works"},
+    {name:"Gene's",detail:"Viet-Cajun BBQ + frozen drinks — East Lake"},
+    {name:"Communidad",detail:"All-day Tex-Mex tacos + margaritas — Old Fourth Ward"},
+    {name:"JenChan's",detail:"Eclectic pizza & Chinese, Slow Food approved — Cabbagetown"},
+    {name:"a mano",detail:"Rustic Italian bistro, Tuscan garden patio — Old Fourth Ward"},
+    {name:"Northern China Eatery",detail:"Handmade dumplings & noodles — Buford Hwy / BeltLine"},
+    {name:"FirePit Pizza Tavern",detail:"Chef-driven pizza, craft cocktails — Grant Park"},
+    {name:"Breaker Breaker",detail:"Gulf Coast seafood shack on the BeltLine — Reynoldstown"},
+    {name:"Lloyd's",detail:"Retro pizzeria, great beer, no-BS vibes — Inman Park"},
+    {name:"Pizza Verdura Sincera",detail:"All-natural plant-based pizza — Little Five Points"},
+    {name:"Staplehouse",detail:"Seasonal American, market + patio — Old Fourth Ward"},
+    {name:"Wrecking Bar Brewpub",detail:"Award-winning gastropub in a historic mansion — L5P"},
+    {name:"The Porter Beer Bar",detail:"60 craft drafts + great food — Little Five Points"},
+    {name:"Lewis Barbecue",detail:"Central Texas BBQ, rooftop smokehouse — Piedmont Heights"},
+    {name:"Antico Pizza",detail:"Legendary Neapolitan wood-fired pies — Home Park"},
+    {name:"Highland Tap",detail:"Underground steakhouse + legendary martinis — Va-Highland"},
+    {name:"Twisted Soul",detail:"Michelin rec, globally-inspired soul food — Blandtown"},
+    {name:"Desta Ethiopian Kitchen",detail:"Best Ethiopian in Atlanta, fresh injera — Briarcliff"},
+    {name:"Kamayan ATL",detail:"Authentic Filipino comfort food, feast-style — Buford Hwy"},
+    {name:"Minhwa Spirits",detail:"Korean soju distillery + cocktail bar & food — Doraville"},
+    {name:"Snackboxe Bistro",detail:"Michelin rec, Lao street food — Doraville"},
+  ],
+  fancy: [
+    {name:"Marcel",detail:"Sexy steakhouse vibes — Westside Provisions District"},
+    {name:"Lazy Betty",detail:"Michelin-star tasting menu, open kitchen — Candler Park"},
+    {name:"Atlas",detail:"Michelin-star, seasonal American + fine art — Buckhead"},
+    {name:"Bacchanalia",detail:"4-course prix fixe, farm-sourced, legendary — West Midtown"},
+    {name:"Bones",detail:"Classic steakhouse since 1979, curtained alcoves — Buckhead"},
+    {name:"Kevin Rathbun Steak",detail:"Chef-driven steakhouse, intimate — BeltLine adjacent"},
+    {name:"Little Sparrow",detail:"Ford Fry's French brasserie, moody + romantic"},
+    {name:"Umi",detail:"Top sushi — elegant, splurge-worthy — Buckhead"},
+    {name:"Ryokou",detail:"Sleek intimate sushi + modern Japanese small plates"},
+    {name:"Sotto Sotto",detail:"Celeb-fave Italian, simple regional food — Inman Park"},
+    {name:"Mujo",detail:"Intimate 15-seat omakase sushi — Michelin-starred"},
+    {name:"Steak Market",detail:"Consistently impressive from cocktails to dessert"},
+    {name:"The Deer and the Dove",detail:"Michelin rec, slow food & local farms — Decatur Square"},
+    {name:"The White Bull",detail:"Michelin rec, house-milled pasta, farm-forward — Decatur"},
+    {name:"Chai Pani",detail:"James Beard winner, vibrant Indian street food — Decatur"},
+    {name:"Talat Market",detail:"Michelin rec, Thai x Southern tasting menu — Summerhill"},
+    {name:"Little Bear",detail:"Michelin Bib Gourmand, seasonal creative cuisine — Summerhill"},
+    {name:"Gunshow",detail:"Kevin Gillespie's roaming cart dinner — Glenwood Park"},
+    {name:"BoccaLupo",detail:"Michelin rec, handmade pasta, intimate — Inman Park"},
+    {name:"Ticonderoga Club",detail:"Michelin rec, pioneering craft cocktails + bites — Krog St"},
+    {name:"Delbar",detail:"Michelin rec, contemporary Persian cuisine — Inman Park"},
+    {name:"Kimball House",detail:"Michelin rec, 20+ oysters + legendary cocktails — Decatur"},
+    {name:"Lucian Books & Wine",detail:"Intimate wine bar + elegant small plates — Buckhead"},
+    {name:"Aria",detail:"Seasonal new American, classic special occasion — Buckhead"},
+    {name:"Lyla Lila",detail:"Southern European, effortlessly romantic — Midtown"},
+    {name:"Madeira Park",detail:"Michelin rec, neighborhood wine bar by Miller Union chef"},
+  ]
+};
+
+const STORAGE_KEY = 'atl_spinner_v6';
+const PALETTES = {
+  experiences:["#AFA9EC","#7F77DD","#534AB7","#9FE1CB","#5DCAA5","#1D9E75","#CDA0D9","#B07CC6","#9154B3","#C9A87C","#B38A5A","#9C6E38","#85B7EB","#378ADD","#B5D4F4","#8ABFBE","#F0997B","#D85A30","#FAC775","#EF9F27"],
+  chill:["#9FE1CB","#5DCAA5","#1D9E75","#AFA9EC","#7F77DD","#85B7EB","#378ADD","#F0997B","#D85A30","#FAC775","#EF9F27","#C0DD97","#97C459","#CDA0D9","#B07CC6","#F5C4B3","#B5D4F4","#8ABFBE","#C9A87C","#B38A5A","#9FE1CB","#534AB7","#1D9E75","#D85A30","#EF9F27","#85B7EB","#AFA9EC","#FAC775","#B07CC6","#5DCAA5","#F0997B","#C0DD97","#7F77DD","#B5D4F4","#D85A30","#1D9E75","#B07CC6","#378ADD","#534AB7","#97C459","#F5C4B3","#8ABFBE","#C9A87C"],
+  fancy:["#AFA9EC","#7F77DD","#534AB7","#3C3489","#F5C4B3","#F0997B","#D85A30","#993C1D","#9FE1CB","#5DCAA5","#FAC775","#B5D4F4","#CDA0D9","#1D9E75","#85B7EB","#B07CC6","#EF9F27","#C0DD97","#378ADD","#8ABFBE","#C9A87C","#B38A5A","#AFA9EC","#7F77DD","#9FE1CB","#F0997B"]
+};
+
+let DATA = JSON.parse(JSON.stringify(DEFAULTS));
+
+async function loadFromStorage() {
+  try {
+    const r = await window.storage.get(STORAGE_KEY);
+    if (r && r.value) {
+      const parsed = JSON.parse(r.value);
+      if (parsed.experiences) DATA.experiences = parsed.experiences;
+      if (parsed.chill) DATA.chill = parsed.chill;
+      if (parsed.fancy) DATA.fancy = parsed.fancy;
+    }
+  } catch(e) {}
+  drawWheel(0);
+  updateCount();
+}
+
+async function saveToStorage() {
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(DATA));
+    const n = document.getElementById('savedNotice');
+    n.classList.add('show');
+    setTimeout(() => n.classList.remove('show'), 2000);
+  } catch(e) {}
+}
+
+let currentCategory = 'experiences';
+let spinning = false;
+let currentAngle = 0;
+
+function setCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['experiences','chill','fancy'][i] === cat));
+  currentAngle = 0;
+  drawWheel(0);
+  document.getElementById('resultCard').innerHTML = '<span class="result-placeholder">Hit spin to reveal your date night pick</span>';
+  if (document.getElementById('managePanel').classList.contains('open')) renderList();
+  updateCount();
+}
+
+function drawWheel(rotation) {
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+  const items = DATA[currentCategory];
+  const base = PALETTES[currentCategory];
+  const colors = Array.from({length: items.length}, (_,i) => base[i % base.length]);
+  const cx = 150, cy = 150, r = 148;
+  const slice = (2 * Math.PI) / items.length;
+  ctx.clearRect(0,0,300,300);
+  items.forEach((item, i) => {
+    const start = rotation + i * slice;
+    const end = start + slice;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.closePath();
+    ctx.fillStyle = colors[i]; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(start + slice/2); ctx.textAlign = 'right';
+    const n = items.length;
+    const fs = n>35?6:n>28?7:n>20?8:n>14?9:11;
+    ctx.font = `500 ${fs}px var(--font-sans,sans-serif)`; ctx.fillStyle = '#1a1a1a';
+    const mc = n>35?13:n>25?15:18;
+    const lbl = item.name.length>mc ? item.name.slice(0,mc-1)+'…' : item.name;
+    ctx.fillText(lbl, r-8, fs*0.4); ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,18,0,2*Math.PI);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=1; ctx.stroke();
+}
+
+function spin() {
+  if (spinning || DATA[currentCategory].length===0) return;
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+  document.getElementById('resultCard').innerHTML = '<span class="result-placeholder">Spinning...</span>';
+  const extra = (5+Math.floor(Math.random()*5))*2*Math.PI;
+  const offset = Math.random()*2*Math.PI;
+  const total = extra+offset;
+  const dur = 3500;
+  const t0 = performance.now();
+  const a0 = currentAngle;
+  function ease(t){return 1-Math.pow(1-t,4);}
+  function frame(now) {
+    const p = Math.min((now-t0)/dur,1);
+    const a = a0+total*ease(p);
+    drawWheel(a);
+    if(p<1){requestAnimationFrame(frame);}
+    else{
+      currentAngle=a%(2*Math.PI);
+      spinning=false;
+      document.getElementById('spinBtn').disabled=false;
+      showResult(a);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function showResult(finalAngle) {
+  const items = DATA[currentCategory];
+  const slice = (2*Math.PI)/items.length;
+  const norm = ((-(finalAngle%(2*Math.PI))+2*Math.PI)%(2*Math.PI)+3*Math.PI/2)%(2*Math.PI);
+  const idx = Math.floor(norm/slice)%items.length;
+  const pick = items[idx];
+  document.getElementById('resultCard').innerHTML =
+    `<span class="result-name">${pick.name}</span><span class="result-detail">${pick.detail}</span>`;
+}
+
+function toggleManage() {
+  const panel = document.getElementById('managePanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) renderList();
+}
+
+function updateCount() {
+  document.getElementById('countBadge').textContent = DATA[currentCategory].length + ' options';
+}
+
+function renderList() {
+  const ul = document.getElementById('itemList');
+  ul.innerHTML = '';
+  DATA[currentCategory].forEach((item, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<div class="item-info"><span class="item-name-text">${item.name}</span><span class="item-detail-text">${item.detail}</span></div><button class="del-btn" onclick="removeItem(${i})">×</button>`;
+    ul.appendChild(li);
+  });
+  updateCount();
+}
+
+function removeItem(i) {
+  DATA[currentCategory].splice(i,1);
+  saveToStorage(); drawWheel(currentAngle); renderList();
+}
+
+function addItem() {
+  const n = document.getElementById('addName');
+  const d = document.getElementById('addDetail');
+  const name = n.value.trim();
+  const detail = d.value.trim();
+  if(!name){n.focus();return;}
+  DATA[currentCategory].push({name, detail});
+  n.value=''; d.value=''; n.focus();
+  saveToStorage(); drawWheel(currentAngle); renderList();
+}
+
+loadFromStorage();
+</script>
